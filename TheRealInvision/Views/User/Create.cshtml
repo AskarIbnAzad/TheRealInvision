@@ -1,0 +1,64 @@
+﻿@model TheRealInvision.Models.DbModels.User
+
+<h4 class="mb-4">User Setup</h4>
+
+<form asp-action="Create" method="post" class="row g-3">
+    <div class="col-md-6">
+        <label for="name" class="form-label">Name</label>
+        <input type="text" class="form-control" id="name" name="name" required>
+    </div>
+    <div class="col-md-6">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" class="form-control" id="email" name="email" required>
+    </div>
+    <div class="col-md-6 position-relative">
+        <label for="plainPassword" class="form-label">Password</label>
+        <div class="input-group">
+            <input type="password" class="form-control" id="plainPassword" name="plainPassword" required>
+            <span class="input-group-text toggle-password" onclick="togglePassword()">
+                <i id="eyeIcon" class="fas fa-eye"></i>
+            </span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <label for="isAdmin" class="form-label">Admin Privileges</label>
+        <select class="form-select" id="isAdmin" name="isAdmin">
+            <option value="true">Yes</option>
+            <option value="false" selected>No</option>
+        </select>
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-success w-100">Create User</button>
+    </div>
+</form>
+
+<script>
+    function togglePassword() {
+        const passwordInput = document.getElementById('plainPassword');
+        const eyeIcon = document.getElementById('eyeIcon');
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            eyeIcon.classList.remove('fa-eye');
+            eyeIcon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            eyeIcon.classList.remove('fa-eye-slash');
+            eyeIcon.classList.add('fa-eye');
+        }
+    }
+</script>
+
+<style>
+    .toggle-password {
+        cursor: pointer;
+    }
+
+    .input-group .form-control {
+        border-right: 0; /* Avoid overlapping border */
+    }
+
+    .input-group-text {
+        border-left: 0; /* Avoid overlapping border */
+        background-color: white; /* Match the input field */
+    }
+</style>

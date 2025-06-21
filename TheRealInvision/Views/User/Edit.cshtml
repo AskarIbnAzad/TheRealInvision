@@ -1,0 +1,85 @@
+﻿@model TheRealInvision.Models.DbModels.User
+
+<div class="container mt-5">
+    <h4 class="mb-4">Edit User</h4>
+    <form asp-action="Edit" method="post" class="row g-3">
+        <!-- Hidden ID Field -->
+        <input type="hidden" name="Id" value="@Model.Id">
+
+        <!-- Name Field -->
+        <div class="col-md-6">
+            <label for="Name" class="form-label">Name</label>
+            <input type="text" class="form-control" id="Name" name="Name" value="@Model.Name" placeholder="Enter user name" required>
+        </div>
+
+        <!-- Email Field -->
+        <div class="col-md-6">
+            <label for="Email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="Email" name="Email" value="@Model.Email" placeholder="Enter email address" required>
+        </div>
+
+        <!-- Password Field with Eye Icon -->
+        <div class="col-md-6 position-relative">
+            <label for="Password" class="form-label">Password</label>
+            <div class="input-group">
+                <input type="password" class="form-control" id="Password" name="Password" placeholder="Leave blank to keep unchanged">
+                <span class="input-group-text toggle-password" onclick="togglePassword()">
+                    <i id="eyeIcon" class="fas fa-eye"></i>
+                </span>
+            </div>
+        </div>
+
+        <!-- IsAdmin Field -->
+        <div class="col-md-6">
+            <label for="IsAdmin" class="form-label">Admin Privileges</label>
+            <select asp-for="IsAdmin" class="form-select">
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+            </select>
+        </div>
+
+        <!-- Save Changes Button -->
+        <div class="col-12">
+            <button type="submit" class="btn btn-success w-100">Save Changes</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function togglePassword() {
+        const passwordInput = document.getElementById('Password');
+        const eyeIcon = document.getElementById('eyeIcon');
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            eyeIcon.classList.remove('fa-eye');
+            eyeIcon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            eyeIcon.classList.remove('fa-eye-slash');
+            eyeIcon.classList.add('fa-eye');
+        }
+    }
+</script>
+
+<style>
+    .toggle-password {
+        cursor: pointer;
+    }
+
+    .input-group .form-control {
+        border-right: 0; /* Avoid overlapping border */
+    }
+
+    .input-group-text {
+        border-left: 0; /* Avoid overlapping border */
+        background-color: white; /* Match input field background */
+    }
+
+    .fas.fa-eye, .fas.fa-eye-slash {
+        transition: color 0.3s ease-in-out;
+    }
+
+    .fas.fa-eye:hover, .fas.fa-eye-slash:hover {
+        color: rgba(0, 123, 255, 0.8); /* Hover effect */
+    }
+</style>

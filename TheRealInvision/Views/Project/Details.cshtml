@@ -1,0 +1,411 @@
+﻿@model TheRealInvision.Models.DbModels.Project
+@{
+    ViewData["Title"] = "Details";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+    .card {
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    border-radius: 10px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .card img {
+    object-fit: cover;
+    max-height: 200px;
+    min-height: 200px;
+    }
+
+    .card-body {
+    text-align: center;
+    }
+
+    #image-list {
+    display: flex;
+    flex-wrap: wrap;
+    }
+
+    .image-numbering {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        cursor: grab;
+        background: black;
+        color: white;
+        width: 40px;
+        text-align: center;
+        border-radius: 6px;
+        height: 30px;
+        padding-top: 2px;
+    }
+
+    .drag-handle {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    cursor: grab;
+    background: black;
+    color: white;
+    width: 50px;
+    text-align: center;
+    border-radius: 6px;
+    padding-left: 5px !important;
+    height:30px;
+    }
+
+        /* Trigger Card Hover on Drag Handle Hover */
+        .drag-handle:hover + .card {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+        }
+
+        /* Drag Handle Hover Style */
+        .drag-handle:hover {
+            background-color: rgba(0, 123, 255, 0.8);
+        }
+
+
+    .drag-handle {
+    display: inline-flex; /* Or use inline-block depending on your design */
+    align-items: center; /* Aligns items vertically, useful for flex */
+    }
+
+
+    .modal-backdrop {
+    backdrop-filter: blur(10px); /* Adds a blur effect to the background */
+    }
+
+    .modal-content {
+    background-color: rgba(0, 0, 0, 0.6); /* Transparent black background for content */
+    }
+
+
+    .modal-header {
+    border-bottom: none !important; /* Forcefully remove border */
+    box-shadow: none !important; /* Remove any shadow */
+    outline: none; /* Eliminate any outline styles */
+    }
+
+    .fas.fa-edit:hover {
+        color: rgba(0, 123, 255, 0.8); /* Change to a blue color on hover */
+        cursor: pointer; /* Display clickable hand cursor */
+    }
+
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0">@Model.Title</h4>
+    <div>
+        @if (Model.IsAdmin || Model.IsOwner)
+        {
+            <a class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#myModal">
+                Transfer Ownership
+            </a>
+        }
+        @if (Model.IsAdmin || Model.IsOwner || Model.IsEditor)
+        {
+            <a asp-action="Create" asp-route-id="@Model.Id" class="btn btn-outline-success">Edit Project</a>
+        }
+
+    </div>
+</div>
+
+<div id="image-list" class="row g-4">
+    @foreach (var image in Model.ProjectImages.OrderBy(img => img.Position))
+    {
+        <div class="col-lg-4">
+            <div class="card border-success mb-3" data-id="@image.Id" >
+                @if (Model.IsAdmin || Model.IsOwner || Model.IsEditor)
+                {
+                    <div class="drag-handle">
+                        <i style="padding-left:3px; padding-right:5px;" class="fa fa-th" aria-hidden="true"></i><p class="card-text">@image.Position</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="image-numbering">
+                        <p class="card-text">@image.Position</p>
+                    </div>
+                }
+
+                <img style="cursor: pointer;" class="card-img-top" src="@image.ImageUrl" alt="@image.Description" onclick="openFirstImageModal('@image.ImageUrl')" />
+                <div class="card-body" style="text-align:left; border-top:1px solid green">
+                    @if (Model.IsAdmin || Model.IsOwner || Model.IsEditor)
+                    {
+                        <i class="fas fa-edit" onclick="editImageTitle('@image.Id','@image.Title')"
+                           style="transition: color 0.3s ease-in-out;"
+                           title="Edit Title"></i>
+
+                    }
+                    else
+                    {
+                        <i class="fa fa-bookmark" aria-hidden="true"></i>
+                    }
+                    @image.Title
+                </div>
+            </div>
+        </div>
+    }
+</div>
+<div class="mb-3">
+    <h4 class="mb-0" style="margin-top: 50px;">Description</h4>
+    <br>
+    <p>@Model.Description</p>
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLabel">Select new Owner</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <select id="dropdown" class="form-select">
+                    <option value="">Select One</option>
+                    @foreach (var item in ViewBag.CapableUser)
+                    {
+                        <option value="@item.Id">@item.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="transferButton" class="btn btn-outline-success" onclick="transfer()">Transfer</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="myTitleModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLabel">Edit Title</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input id="imageIdTxt" hidden />
+                <input class="form-control" id="imageTitleTxt" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-success" onclick="updateImageTitle()">Update</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="imagePreviewModal" class="modal fade" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content bg-transparent">
+            <div class="modal-header">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body position-relative">
+                <img id="modalImage" src="" alt="Image Preview" style="width: 100%; height: 100%; object-fit: contain;" />
+                <button id="prevImageBtn" class="btn position-absolute" style="top: 50%; left: 10px; transform: translateY(-50%); background: none; border: none; color: white; font-size: 2rem;">
+                    &#8592; <!-- Left arrow -->
+                </button>
+                <button id="nextImageBtn" class="btn position-absolute" style="top: 50%; right: 10px; transform: translateY(-50%); background: none; border: none; color: white; font-size: 2rem;">
+                    &#8594; <!-- Right arrow -->
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+
+
+<script>
+     let images = [];
+    let currentIndex = 0;
+
+    function editImageTitle(id,title)
+    {
+        $("#imageIdTxt").val(id);
+        $("#imageTitleTxt").val(title);
+        const modal = new bootstrap.Modal(document.getElementById('myTitleModal'));
+        modal.show();
+    }
+     function updateImageTitle()
+    {
+        debugger
+        var imageIdTxt=$("#imageIdTxt").val();
+        var imageTitleTxt= $("#imageTitleTxt").val();
+
+         $.ajax({
+                 type: 'POST',
+                 url: '/Project/UpdateImageTitle',
+                 data: { imageId: imageIdTxt, title: imageTitleTxt },
+                 success: function (response) {
+                     location.reload();
+                 },
+                 error: function (error) {
+                     alert("An error occurred: " + error.responseText);
+                 }
+          });
+    }
+
+
+    function transfer() {
+        const selectedValue = $('#dropdown').val();
+        if (selectedValue !== "") {
+            const projectId = '@Model.Id';
+            const newOwner = selectedValue;
+
+            $.ajax({
+                url: '/Project/TransferOwnership',
+                type: 'POST',
+                data: { projectId: projectId, newOwner: newOwner },
+                success: function (response) {
+                    // alert("Ownership transferred successfully!");
+                    location.reload(); // Reload the page to reflect changes
+                },
+                error: function (error) {
+                    alert("An error occurred: " + error.responseText);
+                }
+            });
+        } else {
+            alert("Please select a valid owner.");
+        }
+    }
+
+    function refreshImagesArray() {
+        images = [];
+        document.querySelectorAll('#image-list .card').forEach((card, index) => {
+            const imageUrl = card.querySelector('img').getAttribute('src');
+            const description = card.querySelector('.card-text').textContent || `Image ${index + 1}`;
+            images.push({ imageUrl, description });
+        });
+    }
+
+    const imageList = document.getElementById('image-list');
+    Sortable.create(imageList, {
+        animation: 150,
+        handle: '.drag-handle', // Only drag using the drag handle
+        onEnd: () => {
+            refreshImagesArray();
+            const updatedImages = [];
+            document.querySelectorAll('#image-list .card').forEach((card, index) => {
+                const id = card.getAttribute('data-id');
+                updatedImages.push({ Id: id, Position: index });
+
+                const positionElement = card.querySelector('.card-text');
+                if (positionElement) {
+                    positionElement.textContent = index + 1;
+                }
+            });
+
+            fetch('/Project/UpdateImagePositions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedImages)
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log("Positions updated successfully.");
+                } else {
+                    console.error("Error updating positions.");
+                }
+            })
+            .catch(error => console.error('Fetch error:', error));
+        }
+    });
+
+    function openImageModal(index) {
+        currentIndex = index;
+        const image = images[currentIndex];
+        document.getElementById('modalImage').setAttribute('src', image.imageUrl);
+    }
+
+    function openFirstImageModal(index) {
+        debugger
+        const result = images.find(image => image.imageUrl === index);
+        currentIndex = images.findIndex(image => image.imageUrl === index);
+        const image = images[currentIndex];
+        document.getElementById('modalImage').setAttribute('src', image.imageUrl);
+        const modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+        modal.show();
+    }
+
+    document.getElementById('prevImageBtn').addEventListener('click', () => {
+        currentIndex = (currentIndex > 0) ? currentIndex - 1 : images.length - 1;
+        openImageModal(currentIndex);
+    });
+
+    document.getElementById('nextImageBtn').addEventListener('click', () => {
+        currentIndex = (currentIndex < images.length - 1) ? currentIndex + 1 : 0;
+        openImageModal(currentIndex);
+    });
+
+    refreshImagesArray();
+
+    function loadTranferModal(projectId)
+    {
+
+            $.ajax({
+                url: '/Project/TransferableUsers', // Replace 'YourController' with your actual controller name
+                type: 'GET',
+                data: { projectId: projectId },
+                success: function (data) {
+                    // Target the element with ID #projectPermissionBox
+                    var targetElement = $('#projectPermissionBox');
+                    targetElement.empty(); // Clear any existing content
+
+                        var header=` <thead><tr>
+                                        <th scope="col" style="text-align:left">
+                                            User Name
+                                        </th>
+                                        <th scope="col" style="text-align:left">
+                                            User Email
+                                        </th>
+                                        <th scope="col" style="text-align:center">
+                                            Permission
+                                        </th>
+                                    </tr></thead>`;
+                        targetElement.append(header);
+                    // Iterate through the fetched data
+                    data.forEach(function (result) {
+                  var userCard = `<tbody><tr>
+                                   <th scope="row">${result.name}</th>
+                                   <td>${result.email}</td>
+                                   <td style="text-align:center">
+                                       <select onchange="modifyPermission('${projectId}', '${result.id}', this.value)">
+                                           <option value="0" ${result.permission == 0 ? 'selected' : ''}>None</option>
+                                           <option value="1" ${result.permission == 1 ? 'selected' : ''}>Viewer</option>
+                                           <option value="2" ${result.permission == 2 ? 'selected' : ''}>Editor</option>
+                                       </select>
+                                   </td>
+                                 </tr></tbody>`;
+
+
+                        targetElement.append(userCard);
+                    });
+                           if (!$('#exampleModal1').hasClass('show')) {
+                             $('#exampleModal1').modal('show');
+                                }
+
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error fetching permissions:', error);
+                    alert('Failed to load permissions. Please try again.');
+                }
+            });
+
+    }
+
+</script>
+
+
+
+

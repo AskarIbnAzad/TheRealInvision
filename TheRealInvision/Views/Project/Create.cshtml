@@ -1,0 +1,153 @@
+﻿@model TheRealInvision.Models.DbModels.Project
+
+@{
+    if (Model.Id == Guid.Empty)
+    {
+        <h4 class="mb-4">Project Setup</h4>
+
+
+    }
+    else
+    {
+        <h4 class="mb-4">Update Project</h4>
+
+    }
+}
+
+<form asp-action="Create" method="post" enctype="multipart/form-data">
+    <input asp-for="CreatedBy" hidden/>
+    <input asp-for="CreatedDate" hidden/>
+    <input asp-for="Status" hidden/>
+    <input asp-for="ProjectOwner" hidden/>
+    <!-- Title Field -->
+    <div class="mb-3">
+        <label asp-for="Title" class="form-label">Project Title</label>
+        <input asp-for="Title" class="form-control" placeholder="Enter project title" required>
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+
+    <!-- Description Field -->
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label">Description</label>
+        <textarea asp-for="Description" class="form-control" placeholder="Enter project description" rows="4" required></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+   
+
+
+    <!-- New Uploaded Images Section -->
+    <div class="mb-3">
+        <h5>Upload New Images</h5>
+        <input type="file" id="new-image-input" name="images" class="form-control" accept="image/*" multiple />
+        <div id="new-image-preview" class="mt-3 row g-4"></div>
+    </div>
+    <!-- Existing Images Section -->
+    @{
+        if (Model.Id != Guid.Empty && Model.ProjectImages.Count > 0)
+        {
+            <div class="mb-4">
+                <h5>Existing Project Images</h5>
+                <div id="existing-images" class="row g-4">
+                    @foreach (var image in Model.ProjectImages)
+                    {
+                        <div class="col-lg-2 col-md-3 col-sm-6">
+                            <div class="card" style="width: 100%;">
+                                <img src="@image.ImageUrl" alt="Existing Project Image" class="card-img-top" style="height: 150px; object-fit: cover;">
+                                <div class="card-body">
+                                    <button type="button" class="btn btn-outline-dark w-100 delete-btn" data-image-id="@image.Id">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+
+    <!-- Submit Button -->
+    <button type="submit" class="btn btn-success">Save Changes</button>
+</form>
+
+
+<script>
+        document.getElementById('new-image-input').addEventListener('change', function(event) {
+        const previewContainer = document.getElementById('new-image-preview');
+        previewContainer.innerHTML = ""; // Clear previous previews
+
+        Array.from(event.target.files).forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Create card container for each image
+                const colDiv = document.createElement('div');
+                colDiv.classList.add('col-lg-2', 'col-md-3', 'col-sm-6');
+
+                const cardDiv = document.createElement('div');
+                cardDiv.classList.add('card');
+                cardDiv.style.width = '100%';
+
+                // Create the image element
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.alt = "Uploaded Project Image";
+                img.classList.add('card-img-top');
+                img.style.height = '150px';
+                img.style.objectFit = 'cover';
+
+                // Create card body with delete button
+                const cardBody = document.createElement('div');
+                cardBody.classList.add('card-body');
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = "Delete";
+                deleteButton.classList.add('btn', 'btn-outline-dark', 'w-100'); // Full-width button
+                deleteButton.onclick = function() {
+                    colDiv.remove(); // Remove the card
+                    // Clear file input selection
+                    const fileList = Array.from(event.target.files);
+                    fileList.splice(index, 1);
+                    const dataTransfer = new DataTransfer();
+                    fileList.forEach(file => dataTransfer.items.add(file));
+                    event.target.files = dataTransfer.files;
+                };
+
+                // Append elements to the card
+                cardBody.appendChild(deleteButton);
+                cardDiv.appendChild(img);
+                cardDiv.appendChild(cardBody);
+                colDiv.appendChild(cardDiv);
+
+                // Add the card to the preview area
+                previewContainer.appendChild(colDiv);
+            };
+            reader.readAsDataURL(file);
+        });
+    });
+
+
+    document.querySelectorAll('.delete-btn').forEach((btn) => {
+        btn.addEventListener('click', function() {
+            debugger;
+            const imgId = this.getAttribute('data-image-id');
+
+            $.ajax({
+                type: 'POST',
+                url: '/Project/DeleteImage?imageId='+imgId, // Serialize the object into JSON
+                success: function(data) {
+                    if (data.success) {
+                        // Remove the card from the UI
+                        $(btn).closest('.col-lg-2').remove();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error occurred: ' + error);
+                }
+            });
+        });
+    });
+
+
+
+
+</script>
+
